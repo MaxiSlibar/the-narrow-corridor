@@ -4,7 +4,7 @@
 
 We analyze 1.05 million training steps of word embeddings and find that gradient descent is far more constrained than it appears. 98% of possible state transitions never occur. Word frequency almost perfectly predicts trajectory geometry (r = -0.990). The "learning" process is less exploration, more channel-following.
 
-📄 **Paper**: [Coming soon]
+📄 **Paper**: [PDF](paper/the_narrow_corridor.pdf) 
 🔗 **arXiv**: [Coming soon]
 
 ---
