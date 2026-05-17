@@ -1,178 +1,149 @@
 # The Narrow Corridor
 
-**Training doesn't explore. It follows a predetermined path.**
-
-We analyze 1.05 million training steps of word embeddings and find that gradient descent is far more constrained than it appears. 98% of possible state transitions never occur. Word frequency almost perfectly predicts trajectory geometry (r = -0.990). The "learning" process is less exploration, more channel-following.
-
-📄 **Paper**: [PDF](paper/the_narrow_corridor.pdf) 
-🔗 **arXiv**: [Coming soon]
-
----
-
-## Key Results
-
-### 1. Frequency → Geometry (r = -0.990)
-
-![CFD Analysis](figures/cfd_comparison.png)
-
-High-frequency words ("der", "die", "das") cluster in the high-curvature, low-efficiency region. Low-frequency words ("schnell", "tief", "vogel") move almost geodesically with high efficiency.
-
-**The critical test**: "den" is a function word (article) but has low frequency in our corpus. It behaves like content words, not like other articles. This proves **frequency, not word class**, determines trajectory geometry.
-
-| Word | Type | Frequency | Geodesic Ratio | Efficiency |
-|------|------|-----------|----------------|------------|
-| der | article | 24 | 86.0% | 0.087 |
-| die | article | 23 | 86.0% | 0.060 |
-| **den** | **article** | **4** | **97.8%** | **0.350** |
-| schnell | adjective | 2 | 99.0% | 0.606 |
-
-### 2. The Marathon Runner Paradox
-
-More updates ≠ more progress. Frequent words receive many small gradient updates that partially cancel out, resulting in large total movement but low displacement. Rare words receive few updates that align directionally, achieving more displacement with less total movement.
-
-### 3. 98% Forbidden Transitions
-
-![FSSA Analysis](figures/fssa_analysis.png)
-
-Of 10,000 possible state transitions (k=100 clusters), only ~199 ever occur. Training doesn't explore parameter space—it follows a narrow corridor. The structure of data and architecture permits only ~2% of theoretical possibilities.
-
-### 4. Topology Encodes Semantics
-
-![TPA Analysis](figures/tpa_analysis.png)
-
-Words with similar meaning have similar trajectory topology:
-- "die" ~ "das" (articles)
-- "katze" ~ "hund" (animals)
-- "jagt" ~ "arbeitet" (verbs)
-
-The **shape of the path**, not just the destination, encodes semantic relationships.
+> [!WARNING]
+> **This repository's central claims have been falsified by the author
+> (April 2026). The findings reported below — including the
+> `r = −0.990` "frequency–geometry" correlation and the "narrow corridor"
+> interpretation — do not survive controlled testing.**
+>
+> A follow-up paper, **"Destructive Interference in Word Embedding
+> Trajectories: A falsification of the frequency hypothesis, and a
+> mechanistic replacement"** (Slibar 2026, preprint), documents the
+> full falsification ladder and the corrected mechanistic account.
+>
+> See [`RETRACTION_NOTICE.md`](RETRACTION_NOTICE.md) for the detailed
+> summary of what was wrong, what survives, and why.
 
 ---
 
-## Method
+## What this repository is now
 
-We train a Skip-gram model and record every embedding state at every training step.
+This is a **historical artifact** documenting an earlier (and incorrect)
+analysis of Skip-Gram word-embedding training dynamics. It is kept
+online for:
 
-| Parameter | Value |
-|-----------|-------|
-| Model | Skip-gram (Word2Vec-style) |
-| Embedding dimensions | 10 |
-| Vocabulary | 34 words |
-| Training pairs | 420 per epoch |
-| Epochs | 50 |
-| Runs | 50 (different initializations) |
-| **Total steps** | **1,050,000** |
+- transparency about the falsification process,
+- reproducibility of the original (artifact-laden) numbers,
+- and as the source data for the follow-up paper.
 
-### Curvature Flow Decomposition (CFD)
-
-We treat each word's trajectory as a curve in ℝ¹⁰ and compute:
-
-- **Frenet curvature** κ(t): How sharply the trajectory bends
-- **Geodesic ratio**: Displacement / path length (1.0 = straight line)
-- **Efficiency**: Final displacement / total movement
-
-### Forbidden State Sequence Analysis (FSSA)
-
-We cluster embedding states into k=100 regions and build a transition matrix. 98% of entries are zero—these transitions never occur across 1M+ training steps.
+The analytical framing of this repository should **not** be cited as
+evidence for its original claims. The new paper supersedes the
+interpretation here.
 
 ---
 
-## Installation
-```bash
-git clone https://github.com/MaxiSlibar/the-narrow-corridor.git
-cd the-narrow-corridor
-pip install -r requirements.txt
+## Original (now-falsified) claims
+
+The repository originally analyzed 1.05 M SGD training steps on a
+Skip-Gram embedding model with 34-word vocabulary, and reported:
+
+- A Pearson correlation `r(frequency, geodesic_ratio) = −0.990`,
+  interpreted as evidence that gradient descent follows "constrained
+  pathways rather than exploring freely".
+- A "Frequency-Geometry" relationship where high-frequency words
+  produced inefficient ("non-geodesic") paths and low-frequency words
+  produced near-straight paths.
+- A "forbidden transitions" claim that 98 % of possible state
+  transitions never occur during training.
+- A "narrow corridor" geometric interpretation of these findings.
+
+## Why these claims fail
+
+1. **Sampling artifact.** The original geodesic-ratio measure was
+   sensitive to per-word sampling density. Rare words produced
+   stationary phases (`v ≈ 0`) followed by sudden jumps that produced
+   spurious curvature spikes; frequent words produced smooth motion.
+   After arc-length reparametrization (equalizing density across words)
+   the correlation collapses to `r ≈ −0.07`. After removing stationary
+   segments entirely it collapses to exactly zero.
+
+2. **Diffusion artifact.** The follow-up `efficiency` measure that
+   appeared robust under reparametrization is reproduced — and even
+   exceeded — by an isotropic random-walk surrogate that keeps the
+   step-magnitude distribution of each word but randomizes the
+   directions. The correlation `r ≈ −0.81` in the surrogate
+   demonstrates that the effect is the expected `1/√N` diffusion
+   scaling.
+
+3. **Wrong predictor.** What does survive (a `−0.75` correlation
+   between diffusion-normalized directionality and the **context
+   entropy** `H(c|w)` of the word) shows that the active variable is
+   the breadth of a word's context distribution, not frequency.
+   Frequency is a Zipfian proxy with no residual effect after
+   controlling for `H` (partial `r = −0.030`).
+
+4. **Underpowered.** The original `n = 34` was too small for the
+   rank-based statistics that would have caught the leverage-point
+   problem (the Pearson effect at `n = 34` is driven almost entirely
+   by a single observation, the word `die`).
+
+## What the follow-up paper establishes
+
+At `n = 392` (replication on a larger template-generated corpus)
+the corrected picture is:
+
+```
+H(c|w)  →  mean_cos_consec(Δx)  →  structural_ratio ρ(w)
+context heterogeneity   vector summation
 ```
 
-## Usage
-
-### Generate training data
-```bash
-python src/training/experiment.py
-```
-
-This produces ~1.4GB of binary logs recording every training step.
-
-### Run analyses
-```bash
-# All analyses
-python -m src.analysis.run_all
-
-# Individual analysis
-python -m src.analysis.curvature_flow
-python -m src.analysis.forbidden_state_sequences
-python -m src.analysis.topological_persistence
-```
+All three links are independently measurable; all three hold at
+`p < 10⁻⁴`. Words with broad context distributions receive
+SGD updates that **interfere destructively** (consecutive cosine
+down to `−0.10`); words with narrow context distributions receive
+SGD updates that **interfere constructively** (consecutive cosine
+up to `+0.25`). This is the mechanistic basis for the directional
+structure of embedding trajectories — and it has nothing to do with
+frequency *per se*.
 
 ---
 
-## Repository Structure
+## Repository contents (historical)
+
 ```
 the-narrow-corridor/
-├── README.md
-├── requirements.txt
-├── paper/
-│   └── paper.pdf
-├── figures/
-│   ├── cfd_comparison.png
-│   ├── fssa_analysis.png
-│   └── tpa_analysis.png
-├── src/
-│   ├── training/
-│   │   └── experiment.py
-│   └── analysis/
-│       ├── run_all.py
-│       ├── curvature_flow.py
-│       ├── forbidden_state_sequences.py
-│       ├── topological_persistence.py
-│       └── ...
-└── data/
-    └── README.md
+├── paper/                    # Original PDF (falsified findings)
+├── figures/                  # CFD, FSSA, TPA visualizations
+├── src/training/
+│   └── experiment.py
+├── src/analysis/             # Original analysis scripts
+│   ├── curvature_flow.py
+│   └── forbidden_state_sequences.py
+├── data/                     # 1.05M-step training log
+├── RETRACTION_NOTICE.md      # ← READ THIS FIRST
+├── README.md                 # this file
+└── requirements.txt
 ```
 
----
-
-## Results Summary
-
-| Analysis | Key Metric | Value | Finding |
-|----------|-----------|-------|---------|
-| **CFD** | Freq-Geometry correlation | **r = -0.990** | Frequency determines trajectory shape |
-| FSSA | Forbidden transitions | 98% | Training follows narrow corridor |
-| TPA | Topological similarity | Clusters | Semantics encoded in trajectory shape |
-| SBD | Bifurcations | 87 | Discrete phase transitions |
-| RHC | Freq-Plasticity correlation | r = 0.525 | Frequent words stay plastic longer |
+> The newer, controlled analysis scripts (with surrogate, partial
+> correlations, permutation tests, multiprocessing parallelism, and
+> the mechanistic update-cosine test) are not in this repo — they are
+> in the follow-up paper's accompanying code, which will be released
+> alongside the preprint.
 
 ---
 
-## Limitations
+## How to cite
 
-- **Small scale**: 34 words, 10 dimensions. Results need validation on larger models.
-- **Simple architecture**: Skip-gram without attention. Transformers may differ.
-- **Single corpus**: German text, 60 sentences. Language-specific effects possible.
+**Do not cite this repository as evidence for its original claims.**
 
----
+If you want to cite the corrected position, cite the follow-up:
 
-## Citation
-```bibtex
-@article{slibar2026narrowcorridor,
-  title={The Narrow Corridor: Constrained Dynamics of Word Embedding Training},
-  author={Slibar, Maximilian},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
-  year={2026}
-}
-```
+> Slibar, M. (2026). *Destructive Interference in Word Embedding
+> Trajectories: A falsification of the frequency hypothesis, and a
+> mechanistic replacement.* Preprint.
+
+If you want to cite this repository as the historical artifact that
+the follow-up falsifies, link to the specific commit hash that
+contains the original claims, and make clear in your citation that the
+findings have been retracted by the author.
 
 ---
 
 ## License
 
-MIT
+MIT (original license retained).
 
 ---
 
-## Contact
-
-**Maximilian Slibar**
-Mechanistic Interpretability Research
-
-GitHub: [@MaxiSlibar](https://github.com/MaxiSlibar)
+*Maximilian Slibar, Düsseldorf, Germany — April 2026.*
